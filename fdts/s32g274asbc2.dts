@@ -1,0 +1,102 @@
+/*
+ * Copyright (C) 2022 MicroSys Electronics GmbH
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+/dts-v1/;
+#include "mpxs32g274a.dtsi"
+
+/ {
+	model = "MicroSys S32G274ASBC2";
+};
+
+&gmac0 {
+	status = "okay";
+	phy-mode = "sgmii";
+};
+
+&pfe_mdio1 {
+	status = "okay";
+};
+
+&pfe_mdio2 {
+	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
+
+	gpio43_1: gpio@43_1 {
+		compatible = "fcs,fxl6408";
+		reg = <0x43>;
+		#gpio-cells = <2>;
+		gpio-bank-name = "crx0-";
+		direction = [40];
+		input-default-state = [3e];
+		output-default-state = [00];
+		pull-config = [00 3e]; /* pull-enable / pull-up/down */
+		u-boot,i2c-offset-len = <1>; /* one address byte */
+		/*
+		 * Pin             Function           Direction    Polarity    State
+		 * =================================================================
+		 * GPIO0           SJA1124_STAT       in           high        low
+		 * GPIO1           SJA1124_INT#       in           low         high
+		 * GPIO2           AETH_IRQ#          in           low         high
+		 * GPIO3           AETH_RST_CORE#     in           low         high
+		 * GPIO4           LAN_IRQ#           in           low         high
+		 * GPIO5           SD_CD#             in           low         high
+		 * GPIO6           LIN_SLP            out          high        low
+		 * GPIO7           n/c                xxx          xxx         xxx
+		 *
+		 * Note: GPIO7 was CAN_STB on Rev.1. This function has been moved to GPIO7 at GPIO@44
+		 * below. There this pin is called STBY_ON# with reversed polarity!
+		 */
+	};
+
+	gpio44_1: gpio@44_1 {
+		compatible = "fcs,fxl6408";
+		reg = <0x44>;
+		#gpio-cells = <2>;
+		gpio-bank-name = "crx1-";
+		direction = [c1];
+		input-default-state = [00];
+
+		/*
+		 * Bit 0: SERDES_SEL
+		 *
+		 * Selects where the SerDes lanes of SerDes_1 are routed to:
+		 * --------------------------------------------------------------------------------
+		 *
+		 * 0 - PHY lane 0 is SGMII 3.125Gbps (PFE_MAC0) => SJA1110 P4 with 2.5Gb
+		 *     PHY lane 1 is not available
+		 *     This setting needs PCIe1/SGMII CLK of 125MHz.
+		 * 1 - PHY lane 0 is PCIe1_X1 => M.2 slot
+		 *     PHY lane 1 is SGMII 1.25Gbps (PFE_MAC0 or PFE_MAC1) => SJA1110 P4 with 1Gb
+		 *     This setting needs PCIe1/SGMII CLK of 100MHz.
+		 *
+		 *     The default is 1.
+		 */
+		output-default-state = [c1];
+
+		pull-config = [80 c1]; /* pull-enable / pull-up/down */
+		u-boot,i2c-offset-len = <1>; /* one address byte */
+		/*
+		 * Pin             Function           Direction    Polarity    State
+		 * =================================================================
+		 * GPIO0           SERDES_SEL         out          high        high
+		 * GPIO1           n/c                xxx          xxx         xxx
+		 * GPIO2           n/c                xxx          xxx         xxx
+		 * GPIO3           n/c                xxx          xxx         xxx
+		 * GPIO4           n/c                xxx          xxx         xxx
+		 * GPIO5           n/c                xxx          xxx         xxx
+		 * GPIO6           CANSIC_EN          out          high        high
+		 * GPIO7           STBY_ON#           out          low         high
+		 *
+		 * Note 1: STBY_ON# was GPIO7 at GPIO@43 above on Rev.1. There this pin was called
+		 * CAN_STB with reversed polarity!
+		 *
+		 * Note 2: STBY_ON# controlls whether the CAN-bus tranceivers are in standby mode.
+		 * If STBY_ON# is high the transceivers are active and functional.
+		 */
+	};
+};
