@@ -855,14 +855,21 @@ static unsigned long long assign_non_intlv_addr(
 		}
 #endif
 		for (i = 0; i < DDRC_NUM_CS; i++) {
+#ifdef CONFIG_TARGET_MPXLX2160
 			if (conf->cs_in_use & (1 << i)) {
 				conf->cs_base_addr[i] = current_mem_base;
 				conf->cs_size[i] = sz * 4;
 				total_ctlr_mem += sz;
 			}
+#else
+			conf->cs_base_addr[i] = current_mem_base;
+			conf->cs_size[i] = rank_density << 2;
+			total_ctlr_mem += rank_density;
+#endif
 		}
 		break;
 	case DDR_BA_INTLV_CS01:
+#ifdef CONFIG_TARGET_MPXLX2160
 		for (i = 0; i < 2; i++) {
 			if (conf->cs_in_use & (1 << i)) {
 				conf->cs_base_addr[i] = current_mem_base;
@@ -870,7 +877,15 @@ static unsigned long long assign_non_intlv_addr(
 				total_ctlr_mem += sz;
 			}
 		}
+#else
+		for (i = 0; (conf->cs_in_use & (1 << i)) && i < 2; i++) {
+			conf->cs_base_addr[i] = current_mem_base;
+			conf->cs_size[i] = rank_density << 1;
+			total_ctlr_mem += rank_density;
+		}
+#endif
 		current_mem_base += total_ctlr_mem;
+#ifdef CONFIG_TARGET_MPXLX2160
 		for (; i < DDRC_NUM_CS; i++) {
 			if (conf->cs_in_use & (1 << i)) {
 				conf->cs_base_addr[i] = current_mem_base;
@@ -879,6 +894,14 @@ static unsigned long long assign_non_intlv_addr(
 				total_ctlr_mem += so_sz;
 			}
 		}
+#else
+		for (; (conf->cs_in_use & (1 << i)) && i < DDRC_NUM_CS; i++) {
+			conf->cs_base_addr[i] = current_mem_base;
+			conf->cs_size[i] = rank_density;
+			total_ctlr_mem += rank_density;
+			current_mem_base += rank_density;
+		}
+#endif
 		break;
 	case DDR_BA_INTLV_CS01_23:
 		for (i = 0; i < 2; i++) {
@@ -898,6 +921,7 @@ static unsigned long long assign_non_intlv_addr(
 		}
 		break;
 	case DDR_BA_NONE:
+#ifdef CONFIG_TARGET_MPXLX2160
 		for (i = 0; i < DDRC_NUM_CS; i++) {
 			if (conf->cs_in_use & (1 << i)) {
 				conf->cs_base_addr[i] = current_mem_base;
@@ -912,6 +936,15 @@ static unsigned long long assign_non_intlv_addr(
 				}
 			}
 		}
+#else
+		for (i = 0; (conf->cs_in_use & (1 << i)) && i < DDRC_NUM_CS;
+				i++) {
+			conf->cs_base_addr[i] = current_mem_base;
+			conf->cs_size[i] = rank_density;
+			current_mem_base += rank_density;
+			total_ctlr_mem += rank_density;
+		}
+#endif
 		break;
 	default:
 		ERROR("Unsupported bank interleaving\n");
