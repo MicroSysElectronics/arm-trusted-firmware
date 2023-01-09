@@ -822,27 +822,29 @@ static unsigned long long assign_non_intlv_addr(
 	struct ddr_conf *conf,
 	unsigned long long current_mem_base)
 {
-	int i, multiply = 1;
+	int i;
 	const unsigned long long rank_density = pdimm->rank_density >>
 						opt->dbw_cap_shift;
 #ifdef CONFIG_TARGET_MPXLX2160
+	int multiply = 1;
 	const struct dimm_params *sodimm = pdimm + 1;
 	const unsigned long long sorank_density = sodimm->rank_density >>
 						opt->dbw_cap_shift;
 	uint64_t so_sz;
+	uint64_t sz;
 #endif
 	unsigned long long total_ctlr_mem = 0;
-	uint64_t sz;
 
 	debug("rank density 0x%llx\n", rank_density);
 	conf->base_addr = current_mem_base;
+
+#ifdef CONFIG_TARGET_MPXLX2160
 
 	if (opt->ctlr_intlv_mode == DDR_256B_INTLV) {
 		multiply = 2;
 	}
 
 	sz = rank_density * multiply;
-#ifdef CONFIG_TARGET_MPXLX2160
 	so_sz = sorank_density * multiply;
 #endif
 	/* assign each cs */
@@ -851,7 +853,7 @@ static unsigned long long assign_non_intlv_addr(
 #ifdef CONFIG_TARGET_MPXLX2160
 		if (rank_density != sorank_density) {
 			NOTICE("!!! DDR_BA_INTLV_CS0123: DIMM rank_density %llu != SODIMM rank_density %llu.\n",
-			       rank_density,sorank_density);
+					rank_density,sorank_density);
 		}
 #endif
 		for (i = 0; i < DDRC_NUM_CS; i++) {
@@ -903,6 +905,7 @@ static unsigned long long assign_non_intlv_addr(
 		}
 #endif
 		break;
+#ifdef CONFIG_TARGET_MPXLX2160
 	case DDR_BA_INTLV_CS01_23:
 		for (i = 0; i < 2; i++) {
 			if (conf->cs_in_use & (1 << i)) {
@@ -920,6 +923,7 @@ static unsigned long long assign_non_intlv_addr(
 			}
 		}
 		break;
+#endif
 	case DDR_BA_NONE:
 #ifdef CONFIG_TARGET_MPXLX2160
 		for (i = 0; i < DDRC_NUM_CS; i++) {
